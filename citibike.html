@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <link rel="stylesheet" type="text/css" href="citibike.css" />
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
+        <script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=true"></script>
+        <title>Akshay's Citibike page</title>
+    </head>
+    <body>
+        <div id="page-title">
+            <div id="page-title-text">Citibike New York</div>
+            <a href="#" id="refresh_btn" style="display none;">Refresh</a>
+            <div style="clear: both"></div>
+        </div>
+        <div id="main-map">
+        
+        </div>
+    </body>
+    <script>
+      $(document).ready(function(){
+
+
+        $("#main-map").html("jquery works!");
+
+        var citiMap = (function(){
+        	
+        	var map;
+        	var infowindow;
+        	var markers = []; 
+        	function initialize(divName)
+        	{
+        		var latlng = new google.maps.LatLng(40.7542, -73.9846);
+        		var mapOptions = {
+		            center: latlng,
+		            zoom: 15,
+		            mapTypeId: google.maps.MapTypeId.ROADMAP
+		        };
+        		map = new google.maps.Map(document.getElementById(divName),
+                                      mapOptions); 
+        		infowindow = new google.maps.InfoWindow({
+					  content: 'Hello world'
+					});
+        	}
+
+        	function getContentString(station)
+        	{
+        		var contentString = "<div style='text-align: center;'>";
+        		contentString += "Name: "+station.stationName+"<br/>";
+        		contentString += "Available Docks: "+station.availableDocks+"<br/>";
+        		contentString += "Available Bikes: "+station.availableBikes+"<br/>";
+        		contentString += "Status: "+station.statusValue+"<br/>";
+        		contentString+= "</div>";
+        		return contentString;
+        	}
+
+        	function addMarker(station)
+        	{
+        		var latlng = new google.maps.LatLng(station.latitude, station.longitude);
+        		var marker = new google.maps.Marker({
+		            position: latlng,
+		            map: map,
+		            animation: google.maps.Animation.DROP,
+		            title: station.stationName,
+		          });
+        		markers.push(marker);
+        		var contentString = getContentString(station);
+        		google.maps.event.addListener(marker, 'click', function() {
+					map.setCenter(marker.getPosition());
+					map.setZoom(15);
+					infowindow.setContent(contentString);
+					infowindow.open(map,marker);
+				});
+        	}
+
+        	function clearOverlays() {
+				for (var i = 0; i < markers.length; i++ ) {
+				    markers[i].setMap(null);
+				}
+				markers = [];
+			}
+
+			function addMarkers()
+			{
+				$.ajax({
+		        	url: "getCitiBikeData.php", 
+		        	dataType: 'json',
+		        }).success(function(data){
+		        	var stationList = data.stationBeanList; 
+		        	for(index in stationList)
+		        	{
+		        		addMarker(stationList[index]);
+		        	}
+		        });
+			}
+
+        	function refreshMarkers()
+        	{
+        		$("#refresh_btn").hide();
+        		clearOverlays();
+        		addMarkers();
+        		$("#refresh_btn").show();
+        	}
+
+
+
+        	return {
+        		initialize: initialize,
+        		refresh: refreshMarkers,
+        	};
+
+        })();
+
+        /* Function to initialize map and a marker
+        ********************************************/
+        citiMap.initialize("main-map");
+        citiMap.refresh();
+       
+        $("#refresh_btn").click(function(event){
+        	event.preventDefault();
+        	citiMap.refresh();
+        });
+
+
+       /* citiMap.addStation({"id":72,"stationName":"W 52 St & 11 Ave","availableDocks":24,"totalDocks":39,"latitude":40.76727216,"longitude":-73.99392888,"statusValue":"In Service","statusKey":1,"availableBikes":11,"stAddress1":"W 52 St & 11 Ave","stAddress2":"","city":"","postalCode":"","location":"","altitude":"","testStation":false,"lastCommunicationTime":null,"landMark":""});*/
+
+      });
+    </script>
+</html>
